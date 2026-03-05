@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EXEM Claude Code Training</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #d97757;
+      --primary-foreground: #ffffff;
+      --primary-dim: rgba(217, 119, 87, 0.15);
+      --primary-border: rgba(217, 119, 87, 0.3);
+      --bg: #0a0a0a;
+      --bg-alt: #050505;
+      --surface: #111111;
+      --surface-hover: #1a1a1a;
+      --card: #0a0a0a;
+      --card-foreground: #e0e0e0;
+      --foreground: #ececec;
+      --muted: #777777;
+      --muted-foreground: #777;
+      --accent: #141414;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.15);
+      --green-400: #05df72;
+      --green-dim: rgba(5, 223, 114, 0.1);
+      --yellow-400: #fbbf24;
+      --yellow-dim: rgba(251, 191, 36, 0.1);
+      --red-400: #f87171;
+      --blue-400: #60a5fa;
+      --purple-400: #a78bfa;
+      --nav-bg: rgba(10, 10, 10, 0.85);
+      --terminal-bg: #050505;
+      --terminal-header: #0d0d0d;
+      --code-bg: #050505;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --radius-xl: 16px;
+      --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    /* ── Light Mode ── */
+    [data-theme="light"] {
+      --bg: #faf9f5;
+      --bg-alt: #f0efe8;
+      --surface: #ffffff;
+      --surface-hover: #f5f4ef;
+      --card: #ffffff;
+      --card-foreground: #2d2d2d;
+      --foreground: #141413;
+      --muted: #6b6b6b;
+      --muted-foreground: #6b6b6b;
+      --accent: #f0efe8;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.15);
+      --primary-dim: rgba(217, 119, 87, 0.1);
+      --primary-border: rgba(217, 119, 87, 0.25);
+      --green-dim: rgba(5, 180, 90, 0.08);
+      --green-400: #059a4e;
+      --yellow-400: #b8860b;
+      --yellow-dim: rgba(184, 134, 11, 0.08);
+      --nav-bg: rgba(250, 249, 245, 0.9);
+      --terminal-bg: #1a1a1a;
+      --terminal-header: #222222;
+      --code-bg: #1a1a1a;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg);
+      color: var(--foreground);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+    }
+
+    /* ── Scroll Reveal ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(32px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    /* ── Keyframes ── */
+    @keyframes drift {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      25% { transform: translate(30px, -20px) scale(1.05); }
+      50% { transform: translate(-10px, 15px) scale(0.98); }
+      75% { transform: translate(-25px, -10px) scale(1.02); }
+    }
+    @keyframes breathe {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 0.8; }
+    }
+    @keyframes pulse-dot {
+      0%, 100% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.5); opacity: 0.4; }
+    }
+    @keyframes scroll-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(6px); }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    @keyframes progressPulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    /* ── Beta Modal ── */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: fadeIn 0.3s ease;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-box {
+      background: var(--surface);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-xl);
+      padding: 40px;
+      max-width: 480px;
+      width: 90%;
+      text-align: center;
+      animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .modal-box .modal-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    .modal-box h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--foreground);
+    }
+    .modal-box p {
+      font-size: 14px;
+      color: var(--muted);
+      margin-bottom: 24px;
+      line-height: 1.6;
+    }
+    .modal-box .modal-badge {
+      display: inline-block;
+      background: var(--primary-dim);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 16px;
+      border: 1px solid var(--primary-border);
+    }
+    .modal-btn {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border: none;
+      padding: 12px 32px;
+      border-radius: var(--radius);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.2s;
+    }
+    .modal-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+
+    /* ── Navigation ── */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: var(--nav-bg);
+      backdrop-filter: blur(16px) saturate(180%);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      padding: 0 24px;
+    }
+    .nav-progress {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 2px;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.1s linear;
+      z-index: 101;
+    }
+    nav .inner {
+      max-width: 1000px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+    }
+    nav .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--foreground);
+      letter-spacing: -0.02em;
+    }
+    nav .logo svg { width: 80px; height: auto; }
+    nav .nav-links { display: flex; gap: 6px; }
+    nav .nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: var(--radius);
+      transition: all 0.2s;
+    }
+    nav .nav-links a:hover { color: var(--foreground); background: var(--accent); }
+    nav .nav-links a.active { color: var(--primary); background: var(--primary-dim); }
+
+    /* ── Container ── */
+    .container { max-width: 860px; margin: 0 auto; padding: 0 24px; }
+    .container-narrow { max-width: 720px; margin: 0 auto; padding: 0 24px; }
+
+    section { padding: 100px 0; }
+
+    /* ── Hero ── */
+    .hero {
+      position: relative;
+      padding: 160px 0 120px;
+      overflow: hidden;
+      min-height: 80vh;
+      display: flex;
+      align-items: center;
+    }
+    .hero-blobs {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      animation: drift 20s ease-in-out infinite;
+    }
+    .blob-1 {
+      width: 500px; height: 500px;
+      background: rgba(217, 119, 87, 0.08);
+      top: -150px; right: -100px;
+      animation-delay: 0s;
+    }
+    .blob-2 {
+      width: 400px; height: 400px;
+      background: rgba(120, 140, 93, 0.06);
+      bottom: -100px; left: -100px;
+      animation-delay: -7s;
+    }
+    .blob-3 {
+      width: 300px; height: 300px;
+      background: rgba(106, 155, 204, 0.06);
+      top: 50%; left: 50%;
+      animation-delay: -14s;
+    }
+    .hero .container { position: relative; z-index: 1; }
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--primary-dim);
+      color: var(--primary);
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 28px;
+      border: 1px solid var(--primary-border);
+    }
+    .hero-badge .dot {
+      width: 6px; height: 6px;
+      background: var(--primary);
+      border-radius: 50%;
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+    .hero h1 {
+      font-size: clamp(36px, 5vw, 56px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      line-height: 1.15;
+      margin-bottom: 20px;
+    }
+    .hero h1 .highlight { color: var(--primary); }
+    .hero .hero-sub {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--muted);
+      max-width: 560px;
+      line-height: 1.7;
+      margin-bottom: 16px;
+    }
+    .hero .hero-sub strong { color: var(--primary); font-weight: 600; }
+    .hero .hero-small {
+      font-size: 15px;
+      color: var(--muted);
+      opacity: 0.7;
+    }
+    .scroll-indicator {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: var(--muted);
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      opacity: 0.5;
+      animation: scroll-bounce 2s ease-in-out infinite;
+    }
+    .scroll-indicator svg {
+      width: 20px; height: 20px;
+      stroke: var(--muted);
+    }
+
+    /* ── Intro Section ── */
+    .intro-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 36px;
+      margin-top: 12px;
+    }
+    .intro-box .intro-highlight {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--foreground);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+    .intro-tree {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--primary);
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px 22px;
+      margin: 20px 0;
+      line-height: 2.2;
+    }
+    .intro-bottom {
+      font-size: 16px;
+      font-weight: 500;
+      color: var(--foreground);
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    .intro-bottom em {
+      color: var(--primary);
+      font-style: normal;
+      font-weight: 600;
+    }
+
+    /* ── Headings ── */
+    h2 {
+      font-size: clamp(24px, 3vw, 32px);
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      margin-bottom: 8px;
+    }
+    .section-sub {
+      font-size: 16px;
+      color: var(--muted);
+      margin-bottom: 40px;
+      max-width: 560px;
+    }
+
+    /* ── OS Toggle ── */
+    .os-toggle {
+      display: inline-flex;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3px;
+      margin-bottom: 24px;
+    }
+    .os-toggle button {
+      background: none;
+      border: none;
+      padding: 8px 20px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--muted);
+      cursor: pointer;
+      border-radius: 6px;
+      font-family: var(--font-sans);
+      transition: all 0.2s;
+    }
+    .os-toggle button.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+    }
+    .os-content { display: none; }
+    .os-content.active { display: block; }
+
+    /* ── Setup Cards ── */
+    .setup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+    .setup-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .setup-card:hover {
+      border-color: var(--primary-border);
+      transform: translateY(-2px);
+    }
+    .setup-card .card-icon {
+      width: 40px; height: 40px;
+      background: var(--primary-dim);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      margin-bottom: 14px;
+    }
+    .setup-card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--foreground);
+    }
+    .setup-card p {
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+    .setup-card .card-link {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 13px;
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .setup-card .card-link:hover { text-decoration: underline; }
+
+    /* ── Terminal Mockup ── */
+    .terminal {
+      background: var(--terminal-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin: 20px 0;
+    }
+    .terminal-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      background: var(--terminal-header);
+      border-bottom: 1px solid var(--border);
+    }
+    .terminal-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+    }
+    .terminal-dot.red { background: #ff5f56; }
+    .terminal-dot.yellow { background: #ffbd2e; }
+    .terminal-dot.green { background: #27c93f; }
+    .terminal-title {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      margin-left: 8px;
+    }
+    .terminal-body {
+      padding: 18px 20px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.9;
+      color: var(--muted);
+    }
+    .terminal-body .prompt { color: var(--green-400); }
+    .terminal-body .cmd { color: var(--foreground); }
+    .terminal-body .output { color: var(--muted); }
+    .terminal-body .highlight { color: var(--primary); }
+    .terminal-body .success { color: var(--green-400); }
+
+    /* ── Code block inline ── */
+    .code-inline {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px 18px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--primary);
+      margin: 12px 0;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .copy-btn {
+      background: var(--accent);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 11px;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .copy-btn:hover { color: var(--foreground); border-color: var(--primary-border); }
+
+    /* ── Parallax Section ── */
+    .parallax-wrap {
+      height: 200vh;
+      position: relative;
+    }
+    .parallax-sticky {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .parallax-content {
+      text-align: center;
+      max-width: 640px;
+      padding: 0 24px;
+    }
+    .parallax-content h2 {
+      font-size: clamp(28px, 4vw, 44px);
+      font-weight: 800;
+      letter-spacing: -0.04em;
+      margin-bottom: 16px;
+    }
+    .parallax-content p {
+      font-size: 17px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .parallax-bg {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .parallax-bg .blob {
+      filter: blur(150px);
+      opacity: 0.5;
+    }
+
+    /* ── Detail Cards ── */
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 32px;
+    }
+    .detail-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      transition: all 0.3s;
+    }
+    .detail-card:hover {
+      border-color: var(--primary-border);
+      transform: translateY(-2px);
+    }
+    .detail-card .card-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--primary);
+      margin-bottom: 12px;
+      opacity: 0.7;
+    }
+    .detail-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--foreground);
+    }
+    .detail-card p {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    /* ── Curriculum Tab Navigation ── */
+    .tab-nav {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 28px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--accent);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: var(--font-sans);
+      transition: all 0.2s;
+    }
+    .tab-btn:hover { border-color: var(--primary-border); color: var(--foreground); }
+    .tab-btn.active {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      border-color: var(--primary);
+    }
+
+    /* ── Curriculum Cards ── */
+    .curriculum-grid { display: flex; flex-direction: column; gap: 16px; }
+    .day-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 0;
+      overflow: hidden;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .day-card:hover { border-color: var(--primary-border); }
+    .day-card .day-bar {
+      height: 3px;
+      width: 100%;
+    }
+    .day-card[data-day="0"] .day-bar { background: var(--muted); }
+    .day-card[data-day="1"] .day-bar { background: var(--primary); }
+    .day-card[data-day="2"] .day-bar { background: var(--green-400); }
+    .day-card[data-day="3"] .day-bar { background: var(--yellow-400); }
+    .day-card[data-day="4"] .day-bar { background: var(--purple-400); }
+    .day-card[data-day="5"] .day-bar { background: var(--red-400); }
+    .day-card-inner { padding: 24px 28px; }
+    .day-card .day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .day-card .day-label {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--primary);
+      text-transform: uppercase;
+    }
+    .day-card .day-time {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+    .day-card h3 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--foreground);
+    }
+    .day-card .day-desc {
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.65;
+      margin-bottom: 12px;
+    }
+    .day-card .day-outcome {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--green-400);
+      background: var(--green-dim);
+      padding: 4px 12px;
+      border-radius: 12px;
+    }
+    .day-card .day-tip {
+      margin-top: 10px;
+      background: var(--primary-dim);
+      border-left: 3px solid var(--primary);
+      padding: 10px 14px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .day-card .day-tip strong { color: var(--primary); }
+
+    /* ── Tips & Warnings ── */
+    .tip {
+      background: var(--green-dim);
+      border-left: 3px solid var(--green-400);
+      padding: 12px 16px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin: 12px 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .tip strong { color: var(--green-400); }
+    .warning {
+      background: var(--yellow-dim);
+      border-left: 3px solid var(--yellow-400);
+      padding: 12px 16px;
+      border-radius: 0 var(--radius) var(--radius) 0;
+      margin: 12px 0;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    .warning strong { color: var(--yellow-400); }
+    .success-check {
+      background: var(--green-dim);
+      border: 1px solid rgba(5, 223, 114, 0.2);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--green-400);
+      margin: 10px 0;
+    }
+
+    /* ── Steps Section ── */
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-bottom: 16px;
+      transition: all 0.3s;
+    }
+    .step-card:hover { border-color: var(--primary-border); }
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    .step-num {
+      background: var(--primary);
+      color: var(--primary-foreground);
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+    .step-card h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--foreground);
+    }
+    .step-card p { color: var(--muted); font-size: 14px; margin-bottom: 8px; }
+    .step-card a { color: var(--primary); text-decoration: none; }
+    .step-card a:hover { text-decoration: underline; }
+
+    /* ── Pause/Resume ── */
+    .pause-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 24px;
+    }
+    .pause-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+    }
+    .pause-card h3 { font-size: 16px; margin-bottom: 12px; color: var(--foreground); }
+    .pause-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+    .troubleshoot-card {
+      background: var(--surface);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      margin-top: 16px;
+    }
+    .troubleshoot-card h3 {
+      color: var(--yellow-400);
+      margin-bottom: 16px;
+      font-size: 16px;
+    }
+
+    /* ── FAQ Accordion ── */
+    .faq-list { margin-top: 8px; }
+    .faq-item {
+      border-bottom: 1px solid var(--border);
+    }
+    .faq-q {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--foreground);
+      cursor: pointer;
+      user-select: none;
+      transition: color 0.2s;
+    }
+    .faq-q:hover { color: var(--primary); }
+    .faq-q .faq-icon {
+      font-size: 18px;
+      color: var(--muted);
+      transition: transform 0.3s;
+      flex-shrink: 0;
+      margin-left: 16px;
+    }
+    .faq-item.open .faq-q .faq-icon { transform: rotate(45deg); }
+    .faq-a {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.16, 1, 0.3, 1), padding 0.4s;
+      font-size: 14px;
+      color: var(--muted);
+      line-height: 1.7;
+    }
+    .faq-item.open .faq-a {
+      max-height: 300px;
+      padding-bottom: 20px;
+    }
+
+    /* ── Footer ── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 48px 0;
+      text-align: center;
+    }
+    footer p { font-size: 13px; color: var(--muted); }
+    footer a { color: var(--primary); text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+
+    /* ── Theme Toggle ── */
+    .theme-toggle {
+      background: var(--accent);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .theme-toggle:hover {
+      color: var(--foreground);
+      border-color: var(--primary-border);
+    }
+
+    /* ── Light Mode Overrides ── */
+    [data-theme="light"] .terminal-body,
+    [data-theme="light"] .terminal-body .output {
+      color: #aaa;
+    }
+    [data-theme="light"] .terminal-body .cmd {
+      color: #eee;
+    }
+    [data-theme="light"] .code-inline {
+      color: var(--primary);
+    }
+    [data-theme="light"] .code-inline span {
+      color: #eee;
+    }
+    [data-theme="light"] .intro-tree {
+      color: #eee;
+    }
+    [data-theme="light"] .intro-tree {
+      color: var(--primary);
+    }
+    [data-theme="light"] nav .logo svg text:first-child {
+      fill: var(--foreground);
+    }
+    [data-theme="light"] .modal-overlay {
+      background: rgba(0, 0, 0, 0.5);
+    }
+    [data-theme="light"] .success-check {
+      background: rgba(5, 154, 78, 0.08);
+      border-color: rgba(5, 154, 78, 0.2);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .hero { padding: 120px 0 80px; min-height: auto; }
+      .detail-grid { grid-template-columns: 1fr; }
+      .pause-grid { grid-template-columns: 1fr; }
+      .setup-grid { grid-template-columns: 1fr; }
+      nav .nav-links { display: none; }
+      .theme-toggle { width: 32px; height: 32px; font-size: 14px; }
+      .parallax-wrap { height: auto; }
+      .parallax-sticky { position: relative; height: auto; padding: 80px 0; }
+    }
+    @media (max-width: 480px) {
+      .hero h1 { font-size: 28px; }
+      .tab-nav { gap: 4px; }
+      .tab-btn { padding: 6px 12px; font-size: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- Beta Modal -->
+<div class="modal-overlay" id="betaModal">
+  <div class="modal-box">
+    <div class="modal-icon">🧪</div>
+    <div class="modal-badge">Beta Test</div>
+    <h2>EXEM AI 교육 프로그램</h2>
+    <p>현재 Beta 테스트 기간입니다.<br>공식 배포일: 2026년 3월 9일 (월)<br><br>피드백은 언제든 조현서 그룹장에게 보내주세요.</p>
+    <button class="modal-btn" onclick="closeBetaModal()">시작하기 →</button>
+  </div>
+</div>
+
+<!-- Navigation -->
+<nav>
+  <div class="nav-progress" id="navProgress"></div>
+  <div class="inner">
+    <div class="logo">
+      <svg viewBox="0 0 120 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <text x="0" y="21" fill="currentColor" font-family="Pretendard Variable, sans-serif" font-size="18" font-weight="800" letter-spacing="-0.5">EXEM</text>
+        <text x="62" y="21" fill="#d97757" font-family="Geist Mono, monospace" font-size="11" font-weight="500">AI</text>
+      </svg>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="nav-links" id="navLinks">
+        <a href="#intro" data-section="intro">소개</a>
+        <a href="#setup" data-section="setup">사전준비</a>
+        <a href="#start" data-section="start">시작하기</a>
+        <a href="#curriculum" data-section="curriculum">커리큘럼</a>
+        <a href="#pause" data-section="pause">멈춤/이어하기</a>
+        <a href="#faq" data-section="faq">FAQ</a>
+      </div>
+      <button class="theme-toggle" id="themeToggle" aria-label="테마 전환" onclick="toggleTheme()">
+        <span id="themeIcon">☀️</span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<section class="hero" id="hero">
+  <div class="hero-blobs">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+  </div>
+  <div class="container">
+    <div class="hero-badge reveal">
+      <span class="dot"></span>
+      Beta Test Period — 공식 배포 3/9(월)
+    </div>
+    <h1 class="reveal">It's Time for<br><span class="highlight">Claude Code</span></h1>
+    <p class="hero-sub reveal">
+      Claude Code를 이용하면 앱에서 채팅하던 때와는<br>
+      <strong>수준이 다른 결과물, 자동화</strong>가 실제로 가능해집니다.
+    </p>
+    <p class="hero-small reveal">하루 1시간씩, 딱 5일이면 충분합니다.</p>
+  </div>
+  <div class="scroll-indicator">
+    <span>Scroll</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </div>
+</section>
+
+<!-- Intro -->
+<section id="intro" style="padding-top: 60px;">
+  <div class="container-narrow">
+    <h2 class="reveal">'나중에 공부해야지' 생각했던 Claude Code,<br>지금이 기회입니다.</h2>
+
+    <div class="intro-box reveal">
+      <div class="intro-highlight">
+        일일이 앱을 켜서 프롬프트를 입력하고, 파일을 첨부하고, 결과물을 수정해야 했던 불편함.<br>
+        코드 에디터로 Claude Code를 활용하면 <strong>훨씬 간편하게, 강력하게</strong> 성과를 낼 수 있습니다.
+      </div>
+      <div class="intro-tree">
+        필요한 건 딱 3가지:<br>
+        ├── Cursor &nbsp;(무료 코드 에디터 — 코딩 안 합니다)<br>
+        ├── Claude Code &nbsp;(Cursor 안에서 돌아가는 AI 도구)<br>
+        └── 5일간의 호기심
+      </div>
+      <div class="intro-bottom">
+        그래서 우리가 배우는 건 코딩이 아닙니다.<br>
+        AI가 <em>'내 생각대로' 계획을 세우고, 자료를 분석하고, 일할 수 있도록</em><br>
+        <strong style="color: var(--foreground);">시스템을 만드는 법</strong>을 배웁니다.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Setup -->
+<section id="setup">
+  <div class="container">
+    <h2 class="reveal">사전 준비</h2>
+    <p class="section-sub reveal">순서대로 아래 프로그램들을 설치해주세요.</p>
+
+    <div class="os-toggle reveal">
+      <button class="active" onclick="switchOS('mac')">macOS</button>
+      <button onclick="switchOS('win')">Windows</button>
+    </div>
+
+    <div class="setup-grid reveal">
+      <div class="setup-card">
+        <div class="card-icon">📦</div>
+        <h3>Git</h3>
+        <p>교육자료를 다운받는 도구입니다.</p>
+        <div class="os-content mac active">
+          <div class="code-inline">
+            <span>xcode-select --install</span>
+            <button class="copy-btn" onclick="copyCode(this)">복사</button>
+          </div>
+        </div>
+        <div class="os-content win">
+          <a class="card-link" href="https://git-scm.com/download/win" target="_blank">git-scm.com에서 다운로드 →</a>
+        </div>
+      </div>
+      <div class="setup-card">
+        <div class="card-icon">⚡</div>
+        <h3>Node.js</h3>
+        <p>Claude Code가 돌아가는 엔진입니다.</p>
+        <a class="card-link" href="https://nodejs.org" target="_blank">nodejs.org에서 LTS 다운로드 →</a>
+      </div>
+      <div class="setup-card">
+        <div class="card-icon">🤖</div>
+        <h3>Claude 계정</h3>
+        <p>Pro($20/월) 이상 구독이 필요합니다.</p>
+        <a class="card-link" href="https://claude.ai" target="_blank">claude.ai에서 가입 →</a>
+      </div>
+      <div class="setup-card">
+        <div class="card-icon">✏️</div>
+        <h3>Cursor</h3>
+        <p>Claude Code를 실행하는 무료 에디터입니다.</p>
+        <a class="card-link" href="https://cursor.sh" target="_blank">cursor.sh에서 다운로드 →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Parallax: 결과물 미리보기 -->
+<div class="parallax-wrap">
+  <div class="parallax-sticky">
+    <div class="parallax-bg">
+      <div class="blob" style="width:600px;height:600px;background:rgba(217,119,87,0.06);top:-100px;right:-200px;animation:drift 25s ease-in-out infinite;"></div>
+      <div class="blob" style="width:400px;height:400px;background:rgba(106,155,204,0.05);bottom:-100px;left:-100px;animation:drift 25s ease-in-out infinite reverse;"></div>
+    </div>
+    <div class="parallax-content">
+      <p style="font-family:var(--font-mono);font-size:13px;color:var(--primary);margin-bottom:16px;">WHAT YOU'LL BUILD</p>
+      <h2>나와 내 팀을 위한 업무 자동화 엔진</h2>
+      <p>5일 커리큘럼을 따라오면 Claude Code와 관련된 핵심 개념부터 자동화 방법까지,<br>지금 필요한 <strong style="color:var(--primary);">생성형 AI 역량</strong>들을 갖출 수 있습니다.</p>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Cards -->
+<section>
+  <div class="container">
+    <div class="detail-grid">
+      <div class="detail-card reveal">
+        <div class="card-num">01</div>
+        <h3>프롬프트 설계</h3>
+        <p>CO-STAR 프레임워크로 Claude에게 정확한 지시를 내리는 법을 배웁니다.</p>
+      </div>
+      <div class="detail-card reveal">
+        <div class="card-num">02</div>
+        <h3>업무 자동화</h3>
+        <p>반복 업무를 분류하고, AI에게 위임하는 실전 워크플로우를 만듭니다.</p>
+      </div>
+      <div class="detail-card reveal">
+        <div class="card-num">03</div>
+        <h3>도구 연결 (MCP)</h3>
+        <p>Notion, 캘린더 등 실무 도구를 Claude에 연결합니다.</p>
+      </div>
+      <div class="detail-card reveal">
+        <div class="card-num">04</div>
+        <h3>나만의 Skill</h3>
+        <p>반복 업무를 한 번에 실행하는 자동화 버튼을 완성합니다.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Start -->
+<section id="start">
+  <div class="container-narrow">
+    <h2 class="reveal">5분이면 준비 끝</h2>
+    <p class="section-sub reveal">아래 7단계를 순서대로 따라하세요.</p>
+
+    <div class="step-card reveal">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <h3>Cursor 에디터 설치</h3>
+      </div>
+      <p>Claude Code를 실행하는 '공간'입니다. <a href="https://cursor.sh">cursor.sh</a>에서 다운로드 후 설치하세요.</p>
+      <div class="tip"><strong>Cursor 유료 결제</strong>는 걱정 안 하셔도 됩니다. 무료로 충분해요.</div>
+      <div class="success-check">✓ Cursor를 실행했을 때 에디터 화면이 뜨면 성공</div>
+    </div>
+
+    <div class="step-card reveal">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <h3>Cursor에서 터미널 열기</h3>
+      </div>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">터미널 단축키</span>
+        </div>
+        <div class="terminal-body">
+          <span class="highlight">Mac:</span> <span class="cmd">Cmd + J</span>&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;<span class="highlight">Windows:</span> <span class="cmd">Ctrl + J</span>
+        </div>
+      </div>
+      <div class="success-check">✓ 화면 하단에 검은 배경의 터미널 창이 뜨면 성공</div>
+    </div>
+
+    <div class="step-card reveal">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <h3>Claude Code 설치</h3>
+      </div>
+      <p>터미널에 아래 명령어를 복사 → 붙여넣기 하세요:</p>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">bash</span>
+        </div>
+        <div class="terminal-body">
+          <span class="prompt">$</span> <span class="cmd">curl -fsSL https://claude.ai/install.sh | bash</span><br>
+          <span class="output">Installing Claude Code...</span><br>
+          <span class="success">✓ Claude Code installed successfully</span>
+        </div>
+      </div>
+      <div class="code-inline">
+        <span>curl -fsSL https://claude.ai/install.sh | bash</span>
+        <button class="copy-btn" onclick="copyCode(this)">복사</button>
+      </div>
+      <div class="warning"><strong>1~2분 걸릴 수 있습니다.</strong> 화면에 텍스트가 쭉 지나가는 건 정상이에요.</div>
+      <div class="success-check">✓ <code style="font-family:var(--font-mono)">claude --version</code> 입력 → 버전 번호가 뜨면 성공</div>
+    </div>
+
+    <div class="step-card reveal">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <h3>교육 자료 다운로드</h3>
+      </div>
+      <div class="code-inline">
+        <span>git clone https://github.com/exemchs/exem-ai-curriculum-program.git</span>
+        <button class="copy-btn" onclick="copyCode(this)">복사</button>
+      </div>
+      <div class="success-check">✓ "done" 또는 다운로드 완료 메시지가 뜨면 성공</div>
+    </div>
+
+    <div class="step-card reveal">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <h3>프로젝트 폴더 열기</h3>
+      </div>
+      <p>Cursor 상단 메뉴 → <strong style="color:var(--foreground);">File → Open Folder</strong> → <strong style="color:var(--primary);">exem-ai-curriculum-program</strong> 선택</p>
+      <div class="warning"><strong>폴더 위치:</strong> Mac: ~/exem-ai-curriculum-program | Windows: C:\Users\내이름\exem-ai-curriculum-program</div>
+      <div class="success-check">✓ Cursor 왼쪽에 CLAUDE.md, README.md 등 파일이 보이면 성공</div>
+    </div>
+
+    <div class="step-card reveal">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <h3>터미널을 새로 열기</h3>
+      </div>
+      <p>프로젝트 폴더 안에서 터미널이 실행되어야 합니다.</p>
+      <div class="tip"><strong>왜 다시 열어야 하나요?</strong> 프로젝트 폴더 안에서 터미널이 실행되어야 Claude Code가 교육 자료를 인식합니다.</div>
+      <div class="success-check">✓ 터미널 경로에 exem-ai-curriculum-program이 보이면 성공</div>
+    </div>
+
+    <div class="step-card reveal">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <h3>Claude 실행 & 로그인</h3>
+      </div>
+      <div class="terminal">
+        <div class="terminal-header">
+          <div class="terminal-dot red"></div>
+          <div class="terminal-dot yellow"></div>
+          <div class="terminal-dot green"></div>
+          <span class="terminal-title">bash</span>
+        </div>
+        <div class="terminal-body">
+          <span class="prompt">$</span> <span class="cmd">claude</span><br>
+          <span class="output">Welcome to Claude Code!</span><br>
+          <span class="output">Select authentication mode (1-5): <span class="highlight">1</span></span><br>
+          <span class="success">✓ Opening browser for login...</span>
+        </div>
+      </div>
+      <div class="code-inline">
+        <span>claude</span>
+        <button class="copy-btn" onclick="copyCode(this)">복사</button>
+      </div>
+      <div class="success-check" style="background:rgba(5,223,114,0.12);border-color:rgba(5,223,114,0.3);font-size:14px;">
+        🎉 로그인 완료 후 Claude가 인사하면 성공! Day 0 오리엔테이션이 자동으로 시작됩니다.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Curriculum -->
+<section id="curriculum">
+  <div class="container">
+    <h2 class="reveal">5일 커리큘럼</h2>
+    <p class="section-sub reveal">매일 1시간, 점진적으로 레벨업합니다.</p>
+
+    <div class="tab-nav reveal" id="tabNav">
+      <button class="tab-btn active" data-filter="all">전체</button>
+      <button class="tab-btn" data-filter="start">Start</button>
+      <button class="tab-btn" data-filter="0">Day 0</button>
+      <button class="tab-btn" data-filter="1">Day 1</button>
+      <button class="tab-btn" data-filter="2">Day 2</button>
+      <button class="tab-btn" data-filter="3">Day 3</button>
+      <button class="tab-btn" data-filter="4">Day 4</button>
+      <button class="tab-btn" data-filter="5">Day 5</button>
+    </div>
+
+    <div class="curriculum-grid" id="curriculumGrid">
+      <div class="day-card reveal" data-day="0" data-group="start 0">
+        <div class="day-bar"></div>
+        <div class="day-card-inner">
+          <div class="day-header">
+            <span class="day-label">Day 0</span>
+            <span class="day-time">5 min</span>
+          </div>
+          <h3>오리엔테이션</h3>
+          <p class="day-desc">프로그램 소개 및 기초 환경 확인. Claude Code가 뭔지, 왜 쓰는지 알아봅니다.</p>
+          <span class="day-outcome">→ 프로그램 전체 그림 파악 완료</span>
+        </div>
+      </div>
+
+      <div class="day-card reveal" data-day="1" data-group="1">
+        <div class="day-bar"></div>
+        <div class="day-card-inner">
+          <div class="day-header">
+            <span class="day-label">Day 1</span>
+            <span class="day-time">60 min</span>
+          </div>
+          <h3>AI에게 잘 시키는 법</h3>
+          <p class="day-desc">웹 Chat과 Claude Code의 차이를 체험하고, CO-STAR 프레임워크로 프롬프트를 설계합니다. CLAUDE.md를 작성해서 Claude가 나를 기억하게 만듭니다.</p>
+          <div class="day-tip"><strong>사전 과제:</strong> CO-STAR 프레임워크를 미리 읽어오면 실습이 훨씬 수월합니다.</div>
+          <span class="day-outcome">→ Claude에게 정확한 지시를 내리는 프레임워크 습득</span>
+        </div>
+      </div>
+
+      <div class="day-card reveal" data-day="2" data-group="2">
+        <div class="day-bar"></div>
+        <div class="day-card-inner">
+          <div class="day-header">
+            <span class="day-label">Day 2</span>
+            <span class="day-time">60 min</span>
+          </div>
+          <h3>내 업무를 AI로 해보기</h3>
+          <p class="day-desc">내 업무를 3가지로 분류합니다: Just Me / Delegate / Automate. 실제 업무를 하나 골라 AI에게 위임해봅니다.</p>
+          <span class="day-outcome">→ 내 업무 중 AI에 맡길 수 있는 것을 구별하고 실행</span>
+        </div>
+      </div>
+
+      <div class="day-card reveal" data-day="3" data-group="3">
+        <div class="day-bar"></div>
+        <div class="day-card-inner">
+          <div class="day-header">
+            <span class="day-label">Day 3</span>
+            <span class="day-time">60 min</span>
+          </div>
+          <h3>도구 연결하기 — MCP</h3>
+          <p class="day-desc">MCP = "Claude에게 주는 열쇠 묶음". Notion, 캘린더 등 실무 도구를 연결합니다. 연결 후 나오는 결과를 확인하고, 다음 단계로 넘어가는 법까지 실습합니다.</p>
+          <span class="day-outcome">→ Notion, Google Calendar 등을 Claude에서 직접 사용</span>
+        </div>
+      </div>
+
+      <div class="day-card reveal" data-day="4" data-group="4">
+        <div class="day-bar"></div>
+        <div class="day-card-inner">
+          <div class="day-header">
+            <span class="day-label">Day 4</span>
+            <span class="day-time">60 min</span>
+          </div>
+          <h3>자동화하기 — Skill</h3>
+          <p class="day-desc">Skill = "엑셀 매크로의 AI 버전". 반복 업무를 자동화하는 나만의 Skill을 만듭니다.</p>
+          <span class="day-outcome">→ 반복 업무를 한 번에 실행하는 자동화 버튼 완성</span>
+        </div>
+      </div>
+
+      <div class="day-card reveal" data-day="5" data-group="5">
+        <div class="day-bar"></div>
+        <div class="day-card-inner">
+          <div class="day-header">
+            <span class="day-label">Day 5</span>
+            <span class="day-time">60 min</span>
+          </div>
+          <h3>졸업 — 나만의 AI 하네스 완성</h3>
+          <p class="day-desc">5일간 배운 것을 정리하고, 나만의 AI 워크플로우를 완성합니다. 그리고 여러분이 만든 것이 실제로 AI 시장에서 가장 중요하게 다뤄지는 '하네스(Harness)'라는 개념이라는 것을 알게 됩니다.</p>
+          <span class="day-outcome">→ 나만의 AI 업무 시스템(하네스) + 포트폴리오 완성</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pause / Resume -->
+<section id="pause">
+  <div class="container-narrow">
+    <h2 class="reveal">멈춤 / 이어하기</h2>
+    <p class="section-sub reveal">바쁜 업무 중에도 언제든 멈추고, 다음에 이어할 수 있어요.</p>
+
+    <div class="pause-grid reveal">
+      <div class="pause-card">
+        <h3>⏸️ 멈추고 싶을 때</h3>
+        <div class="terminal" style="margin:12px 0">
+          <div class="terminal-header">
+            <div class="terminal-dot red"></div><div class="terminal-dot yellow"></div><div class="terminal-dot green"></div>
+          </div>
+          <div class="terminal-body">
+            <span class="prompt">You:</span> <span class="cmd">여기까지 정리해줘</span><br>
+            <span class="output">Claude가 진행 상황을 요약해줍니다.</span>
+          </div>
+        </div>
+      </div>
+      <div class="pause-card">
+        <h3>▶️ 다시 시작할 때</h3>
+        <p style="line-height:2;">
+          <strong style="color:var(--primary);">1.</strong> Cursor 실행<br>
+          <strong style="color:var(--primary);">2.</strong> File → Open Folder → exem-ai-curriculum-program<br>
+          <strong style="color:var(--primary);">3.</strong> Cmd+J / Ctrl+J 터미널 열기<br>
+          <strong style="color:var(--primary);">4.</strong> <code style="color:var(--primary);font-family:var(--font-mono)">claude</code> 입력<br>
+          <strong style="color:var(--primary);">5.</strong> "이어서 해줘" 또는 /(원하는 day) 입력
+        </p>
+      </div>
+    </div>
+
+    <div class="troubleshoot-card reveal">
+      <h3>⚠️ 이어하기가 안 될 때</h3>
+      <div style="margin-bottom:20px;">
+        <p style="font-weight:600;color:var(--foreground);margin-bottom:8px;font-size:15px;">
+          증상: <code style="font-family:var(--font-mono);color:var(--yellow-400)">command not found: claude</code>
+        </p>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">Cursor에서 새 터미널을 열면 발생할 수 있어요.</p>
+        <p style="color:var(--foreground);font-size:14px;margin-bottom:6px;"><strong>방법 1)</strong> 터미널에 입력:</p>
+        <div class="code-inline">
+          <span>source ~/.zshrc</span>
+          <button class="copy-btn" onclick="copyCode(this)">복사</button>
+        </div>
+        <p style="color:var(--muted);font-size:12px;">Windows라면: <code style="font-family:var(--font-mono)">source ~/.bashrc</code></p>
+        <p style="color:var(--foreground);font-size:14px;margin:10px 0 6px;"><strong>방법 2)</strong> Claude Code 재설치:</p>
+        <div class="code-inline">
+          <span>curl -fsSL https://claude.ai/install.sh | bash</span>
+          <button class="copy-btn" onclick="copyCode(this)">복사</button>
+        </div>
+        <p style="color:var(--foreground);font-size:14px;margin-top:10px;"><strong>방법 3)</strong> Cursor를 완전히 종료(Cmd+Q / Alt+F4) 후 다시 실행</p>
+      </div>
+      <div>
+        <p style="font-weight:600;color:var(--foreground);margin-bottom:8px;font-size:15px;">증상: "이어서 해줘"에 엉뚱한 응답</p>
+        <p style="color:var(--muted);font-size:14px;margin-bottom:8px;">원하는 Day를 직접 지정하세요:</p>
+        <div class="code-inline">
+          <span>/day3</span>
+          <button class="copy-btn" onclick="copyCode(this)">복사</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container-narrow">
+    <h2 class="reveal">자주 묻는 질문</h2>
+
+    <div class="faq-list reveal">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">"터미널"이 뭔가요?<span class="faq-icon">+</span></div>
+        <div class="faq-a">컴퓨터에게 텍스트로 명령을 내리는 창입니다. 마우스로 클릭하는 대신, 글자를 입력해서 지시하는 방식이에요. 이 교육에서는 복사+붙여넣기만 하면 되니 걱정 마세요.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Claude Code랑 Claude 앱(채팅)은 뭐가 다른가요?<span class="faq-icon">+</span></div>
+        <div class="faq-a">Claude 앱 = 웹 브라우저에서 대화하는 방식. Claude Code = 코드 에디터(Cursor) 안에서 실행하는 방식. Claude Code는 파일을 직접 만들고, 도구를 연결하고, 자동화할 수 있어서 "업무 자동화"가 가능합니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Cursor 유료 결제가 필요한가요?<span class="faq-icon">+</span></div>
+        <div class="faq-a">아니요, 무료 플랜으로 충분합니다. Cursor는 Claude Code를 실행하는 "공간"으로만 사용하고, AI 기능은 Claude Code가 담당합니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">프로그래밍을 전혀 몰라도 되나요?<span class="faq-icon">+</span></div>
+        <div class="faq-a">네! 이 프로그램은 비전공자를 위해 설계되었습니다. 코드를 직접 짜는 게 아니라, Claude Code에게 "이렇게 해줘"라고 시키는 법을 배우는 겁니다.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">명령어를 입력했는데 한참 동안 아무것도 안 돼요.<span class="faq-icon">+</span></div>
+        <div class="faq-a">정상입니다! 설치나 다운로드 중에는 1~2분 걸릴 수 있습니다. 화면에 텍스트가 올라가거나 커서가 깜빡이면 작동 중인 겁니다. 5분 이상 아무 반응이 없을 때만 걱정하세요.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">"command not found: claude" 에러가 떠요.<span class="faq-icon">+</span></div>
+        <div class="faq-a">Cursor에서 터미널을 새로 열면 종종 발생하는 문제입니다. 터미널에 <code style="font-family:var(--font-mono);color:var(--primary)">source ~/.zshrc</code> (Mac) 또는 <code style="font-family:var(--font-mono);color:var(--primary)">source ~/.bashrc</code> (Windows)를 입력해보세요. 그래도 안 되면 Cursor를 완전히 종료 후 다시 실행하세요.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p style="font-size:14px;color:var(--foreground);margin-bottom:8px;">EXEM CX Group · Claude Code Training</p>
+    <p>피드백/오류 보고 → 조현서 그룹장 &nbsp;|&nbsp; 추가 팁 → <a href="https://blog.huns.site">blog.huns.site</a></p>
+  </div>
+</footer>
+
+<script>
+// ── Beta Modal ──
+function closeBetaModal() {
+  document.getElementById('betaModal').classList.add('hidden');
+}
+
+// ── Scroll Reveal ──
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+// ── Nav Progress Bar ──
+window.addEventListener('scroll', () => {
+  const scrollTop = window.scrollY;
+  const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+  const progress = (scrollTop / docHeight) * 100;
+  document.getElementById('navProgress').style.width = progress + '%';
+});
+
+// ── Nav Active Link ──
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('.nav-links a');
+
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    const top = section.offsetTop - 100;
+    if (window.scrollY >= top) {
+      current = section.getAttribute('id');
+    }
+  });
+  navLinks.forEach(link => {
+    link.classList.remove('active');
+    if (link.getAttribute('data-section') === current) {
+      link.classList.add('active');
+    }
+  });
+});
+
+// ── OS Toggle ──
+function switchOS(os) {
+  document.querySelectorAll('.os-toggle button').forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+  document.querySelectorAll('.os-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.os-content.' + os).forEach(el => el.classList.add('active'));
+}
+
+// ── Copy Code ──
+function copyCode(btn) {
+  const codeEl = btn.parentElement;
+  const text = codeEl.querySelector('span').textContent.trim();
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = '복사됨!';
+    setTimeout(() => { btn.textContent = '복사'; }, 1500);
+  });
+}
+
+// ── Curriculum Tab Filter ──
+document.getElementById('tabNav').addEventListener('click', (e) => {
+  if (!e.target.classList.contains('tab-btn')) return;
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  e.target.classList.add('active');
+
+  const filter = e.target.dataset.filter;
+  document.querySelectorAll('.day-card').forEach(card => {
+    if (filter === 'all') {
+      card.style.display = '';
+    } else {
+      const groups = card.dataset.group.split(' ');
+      card.style.display = groups.includes(filter) ? '' : 'none';
+    }
+  });
+});
+
+// ── FAQ Accordion ──
+function toggleFaq(el) {
+  const item = el.parentElement;
+  const wasOpen = item.classList.contains('open');
+  // Close all
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  // Toggle current
+  if (!wasOpen) item.classList.add('open');
+}
+
+// ── Smooth Scroll ──
+document.querySelectorAll('nav a[href^="#"]').forEach(anchor => {
+  anchor.addEventListener('click', (e) => {
+    e.preventDefault();
+    const target = document.querySelector(anchor.getAttribute('href'));
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+
+// ── Theme Toggle ──
+function toggleTheme() {
+  const html = document.documentElement;
+  const current = html.getAttribute('data-theme');
+  const next = current === 'light' ? 'dark' : 'light';
+  html.setAttribute('data-theme', next);
+  localStorage.setItem('exem-theme', next);
+  updateThemeIcon(next);
+}
+
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('themeIcon');
+  icon.textContent = theme === 'light' ? '🌙' : '☀️';
+}
+
+// Apply saved theme on load
+(function() {
+  const saved = localStorage.getItem('exem-theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', saved);
+  updateThemeIcon(saved);
+})();
+</script>
+
+</body>
+</html>
